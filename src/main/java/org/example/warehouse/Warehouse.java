@@ -2,6 +2,7 @@ package org.example.warehouse;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Warehouse {
     private static Map<String, Warehouse> instances = new HashMap<>();
@@ -19,7 +20,7 @@ public class Warehouse {
     }
 
     public static Warehouse getInstance(String name) {
-        return instances.computeIfAbsent(name, k -> new Warehouse(name));
+        return instances.computeIfAbsent(name, _ -> new Warehouse(name));
     }
 
 public ProductRecord addProduct(UUID uuid, String name, Category category, BigDecimal price) {
@@ -60,8 +61,13 @@ public ProductRecord addProduct(UUID uuid, String name, Category category, BigDe
         return addedProducts;
     }
 
-    public List<ProductRecord> getProductsBy(Category category) {
-        return addedProducts;
+    public List<ProductRecord> getProductsByCategory(Category category) {
+        if (category == null) {
+            throw new IllegalArgumentException("Category can't be null.");
+        }
+        return productMap.values().stream()
+                .filter(product -> product.category().equals(category)) // Filter by category
+                .collect(Collectors.toUnmodifiableList());
     }
 
     public Optional<ProductRecord> getProductById(UUID uuid) {
@@ -69,12 +75,13 @@ public ProductRecord addProduct(UUID uuid, String name, Category category, BigDe
     }
 
 
-    public List<?> getProductsGroupedByCategories(Category category) {
+    public List<ProductRecord> getProductsGroupedByCategories(Category category) {
+
         return addedProducts;
     }
 
-    public List<?> getChangedProducts() {
-        return addedProducts;
+    public List<ProductRecord> getChangedProducts() {
+        return List.copyOf(changedProducts);
     }
 }
 
