@@ -1,51 +1,62 @@
 package org.example.warehouse;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class Warehouse {
+    private static Map<String, Warehouse> instances = new HashMap<>();
     private String name;
+    private List<ProductRecord> addedProducts = new ArrayList<>();
+    private Map<UUID, ProductRecord> productMap = new HashMap<>();
+    private List<ProductRecord> changedProducts = new ArrayList<>();
 
-    //    private String addedProduct;
-    private List<ProductRecord> addedProducts;
-
-    //    private Warehouse(UUID id, String name, String category, BigDecimal price) {
-//        this.id = id;
-//        this.name = name;
-//        this.category = category;
-//        this.price = price;
-//    }
-    private Warehouse() {
+    private Warehouse(String name) {
+        this.name = name;
     }
 
-    public static Warehouse createWarehouse() {
-        return new Warehouse();
+    public static Warehouse getInstance() {
+        return getInstance("MyStore");
     }
 
-    public static Warehouse createWarehouse(String name) {
-        return new Warehouse();
+    public static Warehouse getInstance(String name) {
+        return instances.computeIfAbsent(name, k -> new Warehouse(name));
     }
 
-
-    public ProductRecord addProduct(UUID uuid, String name, Category category, BigDecimal price) {
-        //exceptions
-        if (addedProducts == null) {
-            addedProducts = new ArrayList<>();
-        }
-        ProductRecord addedProducts = new ProductRecord(uuid, name, category, price);
-        return addedProducts;
+public ProductRecord addProduct(UUID uuid, String name, Category category, BigDecimal price) {
+    if (name == null || name.isBlank()) {
+        throw new IllegalArgumentException("Product name can't be null or empty.");
+    }
+    if (category == null) {
+        throw new IllegalArgumentException("Category can't be null.");
     }
 
-//    public boolean isEmpty() {
-//        return false;
-//    }
+    if (uuid == null) {
+        uuid = UUID.randomUUID();
+    }
+
+    if (price == null) {
+        price = BigDecimal.ZERO;
+    }
+
+    if (productMap.containsKey(uuid)) {
+        throw new IllegalArgumentException("Product with that id already exists, use updateProduct for updates.");
+    }
+    ProductRecord product = new ProductRecord(uuid, name, category, price);
+
+    productMap.put(uuid, product);
+    addedProducts.add(product);
+
+    return product;
+}
+
+    public boolean isEmpty() {
+        return addedProducts.isEmpty();
+    }
 
     public void updateProductPrice(UUID id, BigDecimal price) {
     }
 
-    public List<ProductRecord> getProducts() {
+    public List<ProductRecord> getAddedProducts() {
         return addedProducts;
     }
 
@@ -53,8 +64,8 @@ public class Warehouse {
         return addedProducts;
     }
 
-    public ProductRecord getProductById(UUID uuid) {
-        return addedProducts.get(0);
+    public Optional<ProductRecord> getProductById(UUID uuid) {
+        return Optional.ofNullable(productMap.get(uuid));
     }
 
 
