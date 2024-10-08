@@ -82,7 +82,7 @@ class WarehouseTest {
         @Test
         @DisplayName("returns empty list of products")
         void returnsEmptyListOfProducts() {
-            assertThat(warehouse.getProducts()).isEmpty();
+            assertThat(warehouse.getAddedProducts()).isEmpty();
         }
 
 
@@ -153,7 +153,7 @@ class WarehouseTest {
         @Test
         @DisplayName("returns list with that product")
         void getAllShouldReturnListWithOneProduct() {
-            assertThat(warehouse.getProducts()).containsExactly(addedProduct);
+            assertThat(warehouse.getAddedProducts()).containsExactly(addedProduct);
         }
 
         @Test
@@ -195,7 +195,7 @@ class WarehouseTest {
         @Test
         @DisplayName("returns list with all products")
         void returnsListWithAllProducts() {
-            assertThat(warehouse.getProducts()).isEqualTo(addedProducts);
+            assertThat(warehouse.getAddedProducts()).isEqualTo(addedProducts);
         }
 
         @Test
@@ -233,7 +233,7 @@ class WarehouseTest {
         @Test
         @DisplayName("list returned from getProducts should be unmodifiable")
         void listReturnedFromGetProductsShouldBeImmutable() {
-            var products = warehouse.getProducts();
+            var products = warehouse.getAddedProducts();
             assertThatThrownBy(() -> products.remove(0))
                     .isInstanceOf(UnsupportedOperationException.class);
         }
