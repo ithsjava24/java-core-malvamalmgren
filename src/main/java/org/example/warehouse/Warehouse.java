@@ -8,7 +8,6 @@ public class Warehouse {
     private static Map<String, Warehouse> instances = new HashMap<>();
     private String name;
     private List<ProductRecord> addedProducts = new ArrayList<>();
-    private Map<UUID, ProductRecord> productMap = new HashMap<>();
     private List<ProductRecord> changedProducts = new ArrayList<>();
 
     private Warehouse(String name) {
@@ -16,7 +15,17 @@ public class Warehouse {
     }
 
     public static Warehouse getInstance() {
-        return getInstance("MyStore");
+        String baseName = "myStore";
+        String storeName = baseName;
+
+        int counter = 1;
+
+        while (instances.containsKey(storeName)) {
+            storeName = baseName + counter;
+            counter++;
+        }
+
+        return getInstance(storeName);
     }
 
     public static Warehouse getInstance(String name) {
@@ -24,29 +33,24 @@ public class Warehouse {
     }
 
     public ProductRecord addProduct(UUID uuid, String name, Category category, BigDecimal price) {
-        if (name == null || name.isBlank()) {
+        if (name == null || name.isBlank())
             throw new IllegalArgumentException("Product name can't be null or empty.");
-        }
-        if (category == null) {
+        if (category == null)
             throw new IllegalArgumentException("Category can't be null.");
-        }
 
-        if (uuid == null) {
+        if (uuid == null)
             uuid = UUID.randomUUID();
-        }
-
-        if (price == null) {
+        if (price == null)
             price = BigDecimal.ZERO;
+
+
+        for (ProductRecord pr : addedProducts) {
+            if (pr.uuid().equals(uuid))
+                throw new IllegalArgumentException("Product with that id already exists, use updateProduct for updates.");
         }
 
-        if (productMap.containsKey(uuid)) {
-            throw new IllegalArgumentException("Product with that id already exists, use updateProduct for updates.");
-        }
         ProductRecord product = new ProductRecord(uuid, name, category, price);
-
-        productMap.put(uuid, product);
         addedProducts.add(product);
-
         return product;
     }
 
@@ -54,40 +58,67 @@ public class Warehouse {
         return addedProducts.isEmpty();
     }
 
-    public void updateProductPrice(UUID id, BigDecimal price) {
+    public ProductRecord updateProductPrice(UUID id, BigDecimal newPrice) {
+        if (id == null) throw new IllegalArgumentException("Product id can't be null.");
+        if (newPrice == null) throw new IllegalArgumentException("Product price can't be null.");
+        if (newPrice.compareTo(BigDecimal.ZERO) < 0) throw new IllegalArgumentException("Product price can't be negative.");
+
+        ProductRecord product = addedProducts.stream().filter(productRecord -> productRecord.uuid().equals(id)).findFirst().orElse(null);
+        if (product == null) throw new IllegalArgumentException("Product with that id doesn't exist.");
+
+        if (!product.price().equals(newPrice)) {
+            ProductRecord updatedProduct = new ProductRecord(product.uuid(), product.name(), product.category(), newPrice);
+
+//            productMap.put(id, updatedProduct);
+
+            for (int i = 0; i < addedProducts.size(); i++) {
+                if (addedProducts.get(i).uuid().equals(id)) {
+                    addedProducts.set(i, updatedProduct);
+                    break;
+                }
+            }
+
+            changedProducts.add(product);
+
+            return updatedProduct;
+        }
+        return product;
     }
 
     public List<ProductRecord> getAddedProducts() {
-        return addedProducts;
+        return List.copyOf(addedProducts);
     }
 
     public Optional<ProductRecord> getProductById(UUID uuid) {
-        return Optional.ofNullable(productMap.get(uuid));
+        return Optional.ofNullable(addedProducts.stream().filter(productRecord -> productRecord.uuid().equals(uuid)).findFirst().orElse(null));
     }
 
-//    public List<ProductRecord> getProductsByCategory(Category category) {
-//        if (category == null) {
-//            throw new IllegalArgumentException("Category can't be null.");
-//        }
-//        return productMap.values().stream()
-//                .filter(product -> product.category().equals(category)) // Filter by category
-//                .collect(Collectors.toUnmodifiableList());
-//    }
+    public HashMap<Category, List<ProductRecord>> getProductsGroupedByCategories() {
+        HashMap<Category, List<ProductRecord>> productsByCategory = new HashMap<>();
+        List<Category> categories = new ArrayList<>();
 
-    public Map<Category, List<ProductRecord>> getProductsGroupedByCategories() {
-//        List<ProductRecord> productsOfCategory = addedProducts.stream()
-//                .filter(product -> product.category())
-//                .collect(Collectors.toUnmodifiableList());
-//
-        return null;
+        for (int i = 0; i < addedProducts.size(); i++) {
+            ProductRecord product = addedProducts.get(i);
+            Category category = product.category();
+            if (categories.contains(category)) continue;
+            productsByCategory.put(category, addedProducts.stream()
+                            .filter(productRecord -> productRecord.category().equals(category)).toList());
+            categories.add(category);
+        }
+        return productsByCategory;
     }
 
     public List<ProductRecord> getChangedProducts() {
-        return List.copyOf(changedProducts);
+        return changedProducts;
     }
 
     public List<ProductRecord> getProductsBy(Category category) {
-        return null;
+        if (category == null) {
+            throw new IllegalArgumentException("Category can't be null.");
+        }
+
+        return addedProducts.stream()
+                .filter(product -> product.category().equals(category))
+                .toList();
     }
 }
-
